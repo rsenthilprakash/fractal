@@ -103,7 +103,7 @@ static void create_pattern_rgb(unsigned char *img_data, size_t scale, size_t wid
         if (x_cur < x_min)
             x_min = x_cur;
         if (y_cur < y_min)
-            y_min = x_cur;
+            y_min = y_cur;
 
         row = height - ((size_t)(y_cur * scale_factor) + offset) - 1;
         col = (size_t)(x_cur * scale_factor) + offset;
