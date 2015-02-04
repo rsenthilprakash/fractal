@@ -15,7 +15,15 @@ struct affineTrans
     double cdf;
 };
 
-static unsigned char * alloc_image_buffer(size_t scale, size_t *width, size_t *height, size_t *scale_factor)
+struct scaleOffset
+{
+    size_t scale_x;
+    size_t scale_y;
+    size_t offset_x;
+    size_t offset_y;
+};
+
+static unsigned char * alloc_image_buffer_for_scale(size_t scale, size_t *width, size_t *height)
 {
     unsigned char *buffer;
     size_t w = 10 * scale;
@@ -27,7 +35,6 @@ static unsigned char * alloc_image_buffer(size_t scale, size_t *width, size_t *h
 
     *width = w;
     *height = h;
-    *scale_factor = 1 * scale;
 
     return buffer;
 }
@@ -49,7 +56,7 @@ static void compute_cdf_for_rules(struct affineTrans *rules, size_t num_rules)
 }
 
 static void create_pattern_rgb(unsigned char *img_data, const struct affineTrans *rules, size_t num_rules,
-                               size_t scale, size_t width, size_t height, size_t scale_factor,
+                               size_t scale, size_t width, size_t height, const struct scaleOffset *scale_offset,
                                unsigned long long int num_iters)
 {
     unsigned long long int i = num_iters;
@@ -63,6 +70,11 @@ static void create_pattern_rgb(unsigned char *img_data, const struct affineTrans
     double x_min = 10000;
     double y_max = 0;
     double y_min = 10000;
+
+    size_t scale_x = scale_offset->scale_x;
+    size_t scale_y = scale_offset->scale_y;
+    size_t offset_x = scale_offset->offset_x;
+    size_t offset_y = scale_offset->offset_y;
 
     srand48(seed);
 
@@ -111,10 +123,10 @@ static void create_pattern_rgb(unsigned char *img_data, const struct affineTrans
         if (x_cur < x_min)
             x_min = x_cur;
         if (y_cur < y_min)
-            y_min = x_cur;
+            y_min = y_cur;
 
-        row = (size_t)(y_cur * scale_factor) + 300;
-        col = (size_t)(x_cur * scale_factor) + 300;
+        row = height - ((size_t)(y_cur * scale_y) + offset_y) - 1;
+        col = (size_t)(x_cur * scale_x) + offset_x;
 
         if (row >= height)
             row = height - 1;
@@ -138,17 +150,17 @@ static void create_pattern_rgb(unsigned char *img_data, const struct affineTrans
 
 int main(void)
 {
-    const size_t scale = 100;
-    const unsigned long long int num_iters = 100000;
+    const size_t scale = 1000;
+    const unsigned long long int num_iters = 100000000;
     size_t width;
     size_t height;
-    size_t scale_factor;
-    unsigned char *img_data = alloc_image_buffer(scale, &width, &height, &scale_factor);
+    unsigned char *img_data = alloc_image_buffer_for_scale(scale, &width, &height);
     char png_name[25];
 
 
     struct affineTrans rules[] = { {0.8188251, 0.8711631, -0.1568270, 0.9451363, 0.5044009, 0.2600615, 0.5000000, 0},
                                    {0.3899677, -0.6386825, -0.2169008, -0.1310590, -0.4387605, 0.6664247, 0.5000000, 0} };
+    struct scaleOffset scale_offset = {1 * scale, 2 * scale, 2 * scale, 4 * scale};
 
     /*
     struct affineTrans rules[] = { {0.5,   0.0,   0.0,   0.5,   0.0,   0.0,  0.3333, 0.0},
@@ -164,7 +176,7 @@ int main(void)
 
     compute_cdf_for_rules(rules, num_rules);
 
-    create_pattern_rgb(img_data, rules, num_rules, scale, width, height, scale_factor, num_iters);
+    create_pattern_rgb(img_data, rules, num_rules, scale, width, height, &scale_offset, num_iters);
 
     write_png_color(img_data, width, height, png_name);
 
