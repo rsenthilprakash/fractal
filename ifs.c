@@ -1,47 +1,47 @@
+#include "ifs.h"
 #include "png_utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
-struct affineTrans
+void print_available_shapes()
 {
-    double a;
-    double b;
-    double c;
-    double d;
-    double e;
-    double f;
-    double prob;
-    double cdf;
-};
+    size_t num_shapes = sizeof (shape_database) / sizeof (shape_database[0]);
+    size_t i;
 
-struct scaleOffset
-{
-    size_t scale_x;
-    size_t scale_y;
-    size_t offset_x;
-    size_t offset_y;
-};
+    printf("available shapes\n");
+    for (i = 0; i < num_shapes; i++)
+        printf("%s\n", shape_database[i].shape);
 
-static unsigned char * alloc_image_buffer_for_scale(size_t scale, size_t *width, size_t *height)
-{
-    unsigned char *buffer;
-    size_t w = 10 * scale;
-    size_t h = 10 * scale;
-
-    buffer = malloc(w * h * 3);
-
-    memset(buffer, 0, w * h * 3);
-
-    *width = w;
-    *height = h;
-
-    return buffer;
+    printf("\n");
 }
 
-static void free_image_buffer(unsigned char *buffer)
+static size_t get_shape_index(const char *shape)
 {
-    free(buffer);
+    size_t num_shapes = sizeof (shape_database) / sizeof (shape_database[0]);
+    size_t i;
+    size_t index = INVALID_SHAPE;
+
+    for (i = 0; i < num_shapes; i++) {
+        if (!strcmp(shape_database[i].shape, shape)) {
+            index = i;
+            break;
+        }
+    }
+
+    printf("%u %s\n", i, shape);
+
+    return index;
+}
+
+static void get_scaled_dims(struct dimenstion *scaled_dim, const struct dimenstion *dim, size_t scale)
+{
+    scaled_dim->width = scale * dim->width;
+    scaled_dim->height = scale * dim->height;
+    scaled_dim->scale_x = scale * dim->scale_x;
+    scaled_dim->scale_y = scale * dim->scale_y;
+    scaled_dim->offset_x = scale * dim->offset_x;
+    scaled_dim->offset_y = scale * dim->offset_y;
 }
 
 static void compute_cdf_for_rules(struct affineTrans *rules, size_t num_rules)
@@ -56,7 +56,7 @@ static void compute_cdf_for_rules(struct affineTrans *rules, size_t num_rules)
 }
 
 static void create_pattern_rgb(unsigned char *img_data, const struct affineTrans *rules, size_t num_rules,
-                               size_t scale, size_t width, size_t height, const struct scaleOffset *scale_offset,
+                               const struct dimenstion *scaled_dim,
                                unsigned long long int num_iters)
 {
     unsigned long long int i = num_iters;
@@ -71,10 +71,12 @@ static void create_pattern_rgb(unsigned char *img_data, const struct affineTrans
     double y_max = 0;
     double y_min = 10000;
 
-    size_t scale_x = scale_offset->scale_x;
-    size_t scale_y = scale_offset->scale_y;
-    size_t offset_x = scale_offset->offset_x;
-    size_t offset_y = scale_offset->offset_y;
+    size_t width = scaled_dim->width;
+    size_t height = scaled_dim->height;
+    size_t scale_x = scaled_dim->scale_x;
+    size_t scale_y = scaled_dim->scale_y;
+    size_t offset_x = scaled_dim->offset_x;
+    size_t offset_y = scaled_dim->offset_y;
 
     srand48(seed);
 
@@ -148,39 +150,63 @@ static void create_pattern_rgb(unsigned char *img_data, const struct affineTrans
     printf("%lf %lf %lf %lf\n", x_max, x_min, y_max, y_min);
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
-    const size_t scale = 1000;
+    const size_t scale = 200;
     const unsigned long long int num_iters = 100000000;
-    size_t width;
-    size_t height;
-    unsigned char *img_data = alloc_image_buffer_for_scale(scale, &width, &height);
+
+    unsigned char *img_data;
     char png_name[25];
 
+    size_t num_rules;
+    size_t width;
+    size_t height;
 
-    struct affineTrans rules[] = { {0.8188251, 0.8711631, -0.1568270, 0.9451363, 0.5044009, 0.2600615, 0.5000000, 0},
-                                   {0.3899677, -0.6386825, -0.2169008, -0.1310590, -0.4387605, 0.6664247, 0.5000000, 0} };
-    struct scaleOffset scale_offset = {1 * scale, 2 * scale, 2 * scale, 4 * scale};
+    struct affineTrans *rules;
+    struct dimenstion *dim;
+    struct dimenstion scaled_dim;
 
-    /*
-    struct affineTrans rules[] = { {0.5,   0.0,   0.0,   0.5,   0.0,   0.0,  0.3333, 0.0},
-                                   {0.5,   0.0,   0.0,   0.5,   0.5,   0.0,  0.3333, 0.0},
-                                   {0.5,   0.0,   0.0,   0.5,   0.0,   0.5,  0.3333, 0.0} };
-    */
+    const char *shape;
+    size_t shape_index;
 
-    size_t num_rules = sizeof (rules) / sizeof (rules[0]);
+    if (argc != 2) {
+        printf ("Usage:\n %s <shape>\n", argv[0]);
+        print_available_shapes();
+        return -1;
+    }
 
-    sprintf(png_name, "ifs.png");
+    shape = argv[1];
+    shape_index = get_shape_index(shape);
+
+    if (shape_index == INVALID_SHAPE) {
+        printf("Invalid shape %s\n", shape);
+        print_available_shapes();
+        return -2;
+    }
+
+    rules = shape_database[shape_index].rules;
+    dim = shape_database[shape_index].dim;
+    num_rules = shape_database[shape_index].num_rules;
+
+    get_scaled_dims(&scaled_dim, dim, scale);
+
+    width = scaled_dim.width;
+    height = scaled_dim.height;
+
+    img_data = malloc(width * height * 3);
+    memset(img_data, 50, width * height * 3);
+
+    sprintf(png_name, "%s.png", shape);
 
     printf("%llu %u\n", num_iters, num_rules);
 
     compute_cdf_for_rules(rules, num_rules);
 
-    create_pattern_rgb(img_data, rules, num_rules, scale, width, height, &scale_offset, num_iters);
+    create_pattern_rgb(img_data, rules, num_rules, &scaled_dim, num_iters);
 
     write_png_color(img_data, width, height, png_name);
 
-    free_image_buffer(img_data);
+    free(img_data);
 
     return 0;
 }
