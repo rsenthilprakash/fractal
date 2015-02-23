@@ -14,6 +14,8 @@ static const double x_limit = 1.0;
 static const double y_start = -1.0;
 static const double y_limit = 1.0;
 
+static const unsigned int FIX_FAC = 100;
+
 static unsigned char * alloc_image_buffer(size_t scale, size_t *width, size_t *height, size_t *padding)
 {
     unsigned char *buffer;
@@ -85,6 +87,8 @@ static void create_pattern_rgb(unsigned char *img_data, size_t scale, size_t wid
 
         size_t offset;
 
+        unsigned char color;
+
         for (j = 0; j < n_vertices; ++j) {
 
             if (rand_num < prob_bins[j]) {
@@ -103,9 +107,11 @@ static void create_pattern_rgb(unsigned char *img_data, size_t scale, size_t wid
         if (c >= width)
             c = width - 1;
 
+        color = (unsigned int)( ((255 * FIX_FAC * (ver_ref_index + 1)) / n_vertices) / FIX_FAC );
+
         offset = (r * width * 3) + (c * 3);
-        *(img_data + offset) = 255;
-        *(img_data + offset + 1) = 255;
+        *(img_data + offset) = color;
+        *(img_data + offset + 1) = 255 - color;
         *(img_data + offset + 2) = 255;
 
         p0.x = p_cur.x;
