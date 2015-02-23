@@ -11,7 +11,7 @@ static unsigned char * alloc_image_buffer(size_t scale, size_t *width, size_t *h
 
     buffer = malloc(w * h * 3);
 
-    memset(buffer, 0, w * h * 3);
+    memset(buffer, 255, w * h * 3);
 
     *width = w;
     *height = h;
@@ -54,6 +54,10 @@ static void create_pattern_rgb(unsigned char *img_data, size_t scale, size_t wid
 
         size_t offset;
 
+        unsigned char color_r;
+        unsigned char color_g;
+        unsigned char color_b;
+
         if (rand_num < 0.1) {
             r = 0.05;
             s = 0.60;
@@ -61,6 +65,9 @@ static void create_pattern_rgb(unsigned char *img_data, size_t scale, size_t wid
             phi = 0.0;
             e = 0.0;
             f = 0.0;
+            color_r = 0;
+            color_g = 0;
+            color_b = 0;
         }
         else if (rand_num < 0.2) {
             r = 0.05;
@@ -69,6 +76,9 @@ static void create_pattern_rgb(unsigned char *img_data, size_t scale, size_t wid
             phi = 0.0;
             e = 0.0;
             f = 1.0;
+            color_r = 100;
+            color_g = 100;
+            color_b = 100;
         }
         else if (rand_num < 0.4) {
             r = 0.60;
@@ -77,6 +87,9 @@ static void create_pattern_rgb(unsigned char *img_data, size_t scale, size_t wid
             phi = 0.698;
             e = 0.0;
             f = 0.6;
+            color_r = 0;
+            color_g = 170;
+            color_b = 0;
         }
         else if (rand_num < 0.6) {
             r = 0.50;
@@ -85,6 +98,9 @@ static void create_pattern_rgb(unsigned char *img_data, size_t scale, size_t wid
             phi = 0.349;
             e = 0.0;
             f = 1.1;
+            color_r = 0;
+            color_g = 200;
+            color_b = 0;
         }
         else if (rand_num < 0.8) {
             r = 0.50;
@@ -93,6 +109,9 @@ static void create_pattern_rgb(unsigned char *img_data, size_t scale, size_t wid
             phi = -0.524;
             e = 0.0;
             f = 1.0;
+            color_r = 0;
+            color_g = 255;
+            color_b = 0;
         }
         else {
             r = 0.55;
@@ -101,6 +120,10 @@ static void create_pattern_rgb(unsigned char *img_data, size_t scale, size_t wid
             phi = -0.698;
             e = 0.0;
             f = 0.7;
+            color_r = 0;
+            color_g = 127;
+            color_b = 0;
+
         }
 
         x_cur = (r * cos(theta) * x_prev) - (s * sin(phi) * y_prev) + e;
@@ -117,9 +140,9 @@ static void create_pattern_rgb(unsigned char *img_data, size_t scale, size_t wid
             col = width - 1;
 
         offset = (row * width * 3) + (col * 3);
-        *(img_data + offset) = 255;
-        *(img_data + offset + 1) = 255;
-        *(img_data + offset + 2) = 255;
+        *(img_data + offset) = color_r;
+        *(img_data + offset + 1) = color_g;
+        *(img_data + offset + 2) = color_b;
 
         x_prev = x_cur;
         y_prev = y_cur;
@@ -130,8 +153,8 @@ static void create_pattern_rgb(unsigned char *img_data, size_t scale, size_t wid
 
 int main(void)
 {
-    const size_t scale = 1000;
-    const unsigned long long int num_iters = 10000000;
+    const size_t scale = 100;
+    const unsigned long long int num_iters = 100000;
     size_t width;
     size_t height;
     size_t scale_factor;
