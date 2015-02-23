@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <math.h>
 
-static bool in_julia(double x0, double y0, int n, double cx, double cy, unsigned char *gray_val)
+static bool in_julia(double x0, double y0, int n, double cx, double cy, unsigned char *gray_val, unsigned char *bg_val)
 {
     double x = x0;
     double y = y0;
@@ -19,7 +19,12 @@ static bool in_julia(double x0, double y0, int n, double cx, double cy, unsigned
         n -= 1;
 
         if (val > 4.0) {
+            double x_sq = (x1 - x) * (x1 - x);
+            double y_sq = (y1 - x) * (y1 - x);
+            c_ang = x_sq / (x_sq + y_sq);
+
             *gray_val = 0;
+            *bg_val = (unsigned char) (c_ang * 255);
             return false;
         }
 
@@ -32,6 +37,7 @@ static bool in_julia(double x0, double y0, int n, double cx, double cy, unsigned
     c_ang = xx / (xx + yy);
 
     *gray_val = (unsigned char) (c_ang * 255);
+    *bg_val = 0;
 
     return true;
 }
@@ -163,6 +169,41 @@ static void HSVtoRGB(int *red, int *green, int *blue, double h, double s, double
 
 }
 
+static void generate_julia_plain(unsigned char *buffer, size_t width, size_t height)
+{
+    double xinc = (xmax - xmin) / pixels;
+    double yinc = (ymax - ymin) / pixels;
+    double x = xmin;
+    double y = ymin;
+
+    size_t i;
+    size_t j;
+
+    unsigned char *ptr = buffer;
+
+    for (i = 0; i < height; i++) {
+        x = xmin;
+        for (j = 0; j < width; j++) {
+            unsigned char val;
+            unsigned char bg;
+            bool in_set = in_julia(x, y, num_iters, cx, cy, &val, &bg);
+
+            if (in_set) {
+                *ptr++ = 255;
+                *ptr++ = 255;
+                *ptr++ = 255;
+            }
+            else {
+                *ptr++ = 0;
+                *ptr++ = 0;
+                *ptr++ = 0;
+            }
+            x += xinc;
+        }
+        y += yinc;
+    }
+}
+
 static void generate_julia_gray(unsigned char *buffer, size_t width, size_t height)
 {
     double xinc = (xmax - xmin) / pixels;
@@ -179,7 +220,8 @@ static void generate_julia_gray(unsigned char *buffer, size_t width, size_t heig
         x = xmin;
         for (j = 0; j < width; j++) {
             unsigned char val;
-            bool in_set = in_julia(x, y, num_iters, cx, cy, &val);
+            unsigned char bg;
+            bool in_set = in_julia(x, y, num_iters, cx, cy, &val, &bg);
 
             if (in_set) {
                 *ptr++ = val;
@@ -190,6 +232,41 @@ static void generate_julia_gray(unsigned char *buffer, size_t width, size_t heig
                 *ptr++ = 0;
                 *ptr++ = 0;
                 *ptr++ = 0;
+            }
+            x += xinc;
+        }
+        y += yinc;
+    }
+}
+
+static void generate_julia_gray_bg(unsigned char *buffer, size_t width, size_t height)
+{
+    double xinc = (xmax - xmin) / pixels;
+    double yinc = (ymax - ymin) / pixels;
+    double x = xmin;
+    double y = ymin;
+
+    size_t i;
+    size_t j;
+
+    unsigned char *ptr = buffer;
+
+    for (i = 0; i < height; i++) {
+        x = xmin;
+        for (j = 0; j < width; j++) {
+            unsigned char val;
+            unsigned char bg;
+            bool in_set = in_julia(x, y, num_iters, cx, cy, &val, &bg);
+
+            if (in_set) {
+                *ptr++ = val;
+                *ptr++ = val;
+                *ptr++ = val;
+            }
+            else {
+                *ptr++ = bg;
+                *ptr++ = bg;
+                *ptr++ = bg;
             }
             x += xinc;
         }
@@ -266,20 +343,21 @@ static void generate_julia_hsv(unsigned char *buffer, size_t width, size_t heigh
 int main(int argc, char *argv[])
 {
     int color;
-    const char *file_name;
+    char file_name[30];
 
     size_t width = pixels;
     size_t height = pixels;
 
     unsigned char *buffer = calloc(1, 3 * width * height);
 
-    if (argc != 3) {
-        printf("Usage:\n %s <file_name> <color(0 - gray / 1 - rgb / 2 - hsv)>\n", argv[0]);
+    if (argc != 2) {
+        printf("Usage:\n %s <color(0 - gray / 1 - rgb / 2 - hsv / 4 - binary / 5 - gray with bg)>\n", argv[0]);
         return -1;
     }
 
-    file_name = argv[1];
-    color = atoi(argv[2]);
+    color = atoi(argv[1]);
+
+    sprintf(file_name, "julia_%05d_%05d_%d.png", (int)(cx * 1000), (int)(cy * 1000), color);
 
     switch (color) {
     case 0:
@@ -290,6 +368,12 @@ int main(int argc, char *argv[])
         break;
     case 2:
         generate_julia_hsv(buffer, width, height);
+        break;
+    case 4:
+        generate_julia_plain(buffer, width, height);
+        break;
+    case 5:
+        generate_julia_gray_bg(buffer, width, height);
         break;
     default:
         generate_julia_gray(buffer, width, height);
