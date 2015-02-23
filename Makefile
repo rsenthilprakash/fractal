@@ -11,8 +11,9 @@ SOURCES = fern.c \
           maple.c \
           ifs.c \
           julia.c \
+          mandel.c \
 
-TARGETS =  fern poly tree maple ifs julia
+TARGETS =  fern poly tree maple ifs julia mandel
 
 .PHONY: all
 all: $(TARGETS)
@@ -33,6 +34,9 @@ ifs: ifs.o png_utils.o
 	$(CC) $^ $(PNG_LIBS) $(LIBS) -o $@
 
 julia: julia.o png_utils.o
+	$(CC) $^ $(PNG_LIBS) $(LIBS) -o $@
+
+mandel: mandel.o png_utils.o
 	$(CC) $^ $(PNG_LIBS) $(LIBS) -o $@
 
 .c.o:
