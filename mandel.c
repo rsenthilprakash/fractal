@@ -78,12 +78,20 @@ static void generate_mandel(unsigned char *buffer, size_t width, size_t height)
 
 int main(int argc, char *argv[])
 {
-    const char *file_name = "mandel.png";
-
     size_t width = pixels;
     size_t height = pixels;
 
     unsigned char *buffer = calloc(1, 3 * width * height);
+
+    char file_name[50];
+    char *png_dir;
+
+    if (argc == 2)
+        png_dir = argv[1];
+    else
+        png_dir = ".";
+
+    snprintf(file_name, 50, "%s/mandel.png", png_dir);
 
     generate_mandel(buffer, width, height);
 

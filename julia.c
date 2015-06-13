@@ -343,21 +343,27 @@ static void generate_julia_hsv(unsigned char *buffer, size_t width, size_t heigh
 int main(int argc, char *argv[])
 {
     int color;
-    char file_name[30];
+    char file_name[60];
+    char *png_dir;
 
     size_t width = pixels;
     size_t height = pixels;
 
     unsigned char *buffer = calloc(1, 3 * width * height);
 
-    if (argc != 2) {
-        printf("Usage:\n %s <color(0 - gray / 1 - rgb / 2 - hsv / 4 - binary / 5 - gray with bg)>\n", argv[0]);
+    if (argc != 2 && argc != 3) {
+        printf("Usage:\n %s <color(0 - gray / 1 - rgb / 2 - hsv / 4 - binary / 5 - gray with bg)> <optional: output dir>\n", argv[0]);
         return -1;
     }
 
     color = atoi(argv[1]);
 
-    sprintf(file_name, "julia_%05d_%05d_%d.png", (int)(cx * 1000), (int)(cy * 1000), color);
+    if (argc == 3)
+        png_dir = argv[2];
+    else
+        png_dir = ".";
+
+    snprintf(file_name, 60, "%s/julia_%05d_%05d_%d.png", png_dir, (int)(cx * 1000), (int)(cy * 1000), color);
 
     switch (color) {
     case 0:

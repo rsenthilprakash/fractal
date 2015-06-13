@@ -1,3 +1,3 @@
-*.o
-*.d
+_build_
+_output_
 *.png

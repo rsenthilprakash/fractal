@@ -151,7 +151,7 @@ static void create_pattern_rgb(unsigned char *img_data, size_t scale, size_t wid
     };
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
     const size_t scale = 100;
     const unsigned long long int num_iters = 100000;
@@ -159,9 +159,15 @@ int main(void)
     size_t height;
     size_t scale_factor;
     unsigned char *img_data = alloc_image_buffer(scale, &width, &height, &scale_factor);
-    char png_name[25];
+    char png_name[50];
+    char *png_dir;
 
-    sprintf(png_name, "tree.png");
+    if (argc == 2)
+        png_dir = argv[1];
+    else
+        png_dir = ".";
+
+    snprintf(png_name, 50, "%s/tree.png", png_dir);
 
     printf("%llu\n", num_iters);
 

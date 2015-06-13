@@ -5,8 +5,11 @@ CPPLIBS = -lstdc++
 PNG_CFLAGS = `pkg-config --cflags libpng`
 PNG_LIBS = `pkg-config --libs libpng`
 
+BUILD_DIR = _build_
+
+PNG_SOURCES = png_utils.c
+
 C_SOURCES = fern.c \
-            png_utils.c \
             poly.c \
             tree.c \
             maple.c \
@@ -16,34 +19,37 @@ C_SOURCES = fern.c \
 
 CPP_SOURCES =  julia_iim.cpp \
 
-DEPENDS = $(C_SOURCES:%.c=%.d) $(CPP_SOURCES:%.cpp=%.d)
+PNG_OBJECTS = $(PNG_SOURCES:%.c=$(BUILD_DIR)/%.o)
 
-C_TARGETS = fern poly tree maple ifs julia mandel
-CPP_TARGETS = julia_iim
+C_TARGETS = $(C_SOURCES:%.c=$(BUILD_DIR)/%)
+CPP_TARGETS =  $(CPP_SOURCES:%.cpp=$(BUILD_DIR)/%)
 TARGETS = $(C_TARGETS) $(CPP_TARGETS)
+
+DEPENDS = $(C_SOURCES:%.c=$(BUILD_DIR)/%.d) $(CPP_SOURCES:%.cpp=$(BUILD_DIR)/%.d) $(PNG_SOURCES:%.c=$(BUILD_DIR)/%.d)
 
 .PHONY: all
 all: $(TARGETS)
 
-$(C_TARGETS): % : %.o png_utils.o
+$(C_TARGETS): % : %.o $(PNG_OBJECTS)
 	$(CC) $^ $(PNG_LIBS) $(LIBS) -o $@
 
-$(CPP_TARGETS): % : %.o png_utils.o
+$(CPP_TARGETS): % : %.o $(PNG_OBJECTS)
 	$(CC) $^ $(PNG_LIBS) $(CPPLIBS) -o $@
 
-png_utils.o: png_utils.c
+$(PNG_OBJECTS): $(PNG_SOURCES)
+	@mkdir -p $(BUILD_DIR)
 	$(CC) -c $(CFLAGS) $(PNG_CFLAGS) $< -o $@
 
-.c.o:
+$(BUILD_DIR)/%.o: %.c
+	@mkdir -p $(BUILD_DIR)
 	$(CC) -c $(CFLAGS) -MMD $< -o $@
 
-.cpp.o:
+$(BUILD_DIR)/%.o: %.cpp
+	@mkdir -p $(BUILD_DIR)
 	$(CC) -c $(CFLAGS) -MMD $< -o $@
 
 -include $(DEPENDS)
 
 .PHONY: clean
 clean:
-	rm -f $(TARGETS)
-	rm -f *.o
-	rm -f $(DEPENDS)
+	rm -rf $(BUILD_DIR)

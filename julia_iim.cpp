@@ -52,10 +52,12 @@ void generate_julia_iim(unsigned char *img_buffer, int width, int height, std::c
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     int width = 1920;
     int height = 1920;
+
+    char png_name[50];
 
     std::complex<double> C(-0.391, -0.587);
 
@@ -65,7 +67,13 @@ int main()
 
     generate_julia_iim(img_buffer, width, height, C);
 
-    write_png_color(img_buffer, width, height, "julia_iim_test.png");
+    if (argc == 2)
+        snprintf(png_name, 50, "%s/julia_iim_test.png", argv[1]);
+    else
+        snprintf(png_name, 50, "julia_iim_test.png");
+
+
+    write_png_color(img_buffer, width, height, png_name);
 
     delete[] img_buffer;
 }

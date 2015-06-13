@@ -156,7 +156,8 @@ int main(int argc, char *argv[])
     const unsigned long long int num_iters = 100000000;
 
     unsigned char *img_data;
-    char png_name[25];
+    char png_name[50];
+    char *png_dir;
 
     size_t num_rules;
     size_t width;
@@ -169,14 +170,19 @@ int main(int argc, char *argv[])
     const char *shape;
     size_t shape_index;
 
-    if (argc != 2) {
-        printf ("Usage:\n %s <shape>\n", argv[0]);
+    if (argc != 2 && argc != 3) {
+        printf ("Usage:\n %s <shape> <optional output dir>\n", argv[0]);
         print_available_shapes();
         return -1;
     }
 
     shape = argv[1];
     shape_index = get_shape_index(shape);
+
+    if (argc == 3)
+        png_dir = argv[2];
+    else
+        png_dir = ".";
 
     if (shape_index == INVALID_SHAPE) {
         printf("Invalid shape %s\n", shape);
@@ -196,7 +202,7 @@ int main(int argc, char *argv[])
     img_data = malloc(width * height * 3);
     memset(img_data, 50, width * height * 3);
 
-    sprintf(png_name, "%s.png", shape);
+    snprintf(png_name, 50, "%s/%s.png", png_dir, shape);
 
     printf("%llu %u\n", num_iters, num_rules);
 
