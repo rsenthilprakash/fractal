@@ -5,64 +5,45 @@ CPPLIBS = -lstdc++
 PNG_CFLAGS = `pkg-config --cflags libpng`
 PNG_LIBS = `pkg-config --libs libpng`
 
-SOURCES = fern.c \
-          png_utils.c \
-          poly.c \
-          tree.c \
-          maple.c \
-          ifs.c \
-          julia.c \
-          mandel.c \
-          julia_iim.cpp \
+C_SOURCES = fern.c \
+            png_utils.c \
+            poly.c \
+            tree.c \
+            maple.c \
+            ifs.c \
+            julia.c \
+            mandel.c \
 
-TARGETS =  fern poly tree maple ifs julia mandel julia_iim
+CPP_SOURCES =  julia_iim.cpp \
+
+DEPENDS = $(C_SOURCES:%.c=%.d) $(CPP_SOURCES:%.cpp=%.d)
+
+C_TARGETS = fern poly tree maple ifs julia mandel
+CPP_TARGETS = julia_iim
+TARGETS = $(C_TARGETS) $(CPP_TARGETS)
 
 .PHONY: all
 all: $(TARGETS)
 
-fern: fern.o png_utils.o
+$(C_TARGETS): % : %.o png_utils.o
 	$(CC) $^ $(PNG_LIBS) $(LIBS) -o $@
 
-poly: poly.o png_utils.o
-	$(CC) $^ $(PNG_LIBS) $(LIBS) -o $@
-
-tree: tree.o png_utils.o
-	$(CC) $^ $(PNG_LIBS) $(LIBS) -o $@
-
-maple: maple.o png_utils.o
-	$(CC) $^ $(PNG_LIBS) $(LIBS) -o $@
-
-ifs: ifs.o png_utils.o
-	$(CC) $^ $(PNG_LIBS) $(LIBS) -o $@
-
-julia: julia.o png_utils.o
-	$(CC) $^ $(PNG_LIBS) $(LIBS) -o $@
-
-mandel: mandel.o png_utils.o
-	$(CC) $^ $(PNG_LIBS) $(LIBS) -o $@
-
-julia_iim: julia_iim.o png_utils.o
+$(CPP_TARGETS): % : %.o png_utils.o
 	$(CC) $^ $(PNG_LIBS) $(CPPLIBS) -o $@
 
 png_utils.o: png_utils.c
 	$(CC) -c $(CFLAGS) $(PNG_CFLAGS) $< -o $@
 
 .c.o:
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) -c $(CFLAGS) -MMD $< -o $@
 
 .cpp.o:
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) -c $(CFLAGS) -MMD $< -o $@
 
-depend: .depend
-
-.depend: $(SOURCES)
-	rm -f ./.depend
-	$(CC) $(CFLAGS) $(PNG_CFLAGS) -MM $^ > ./.depend;
-
-include .depend
+-include $(DEPENDS)
 
 .PHONY: clean
 clean:
-	rm -rf $(TARGETS)
-	rm -rf *.o
-	rm -rf ./.depend
+	rm -f $(TARGETS)
+	rm -f *.o
+	rm -f $(DEPENDS)
