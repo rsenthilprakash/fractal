@@ -3,6 +3,14 @@
 
 #include <png.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void write_png_color(unsigned char *img_data, int width, int height, const char *file_name);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
